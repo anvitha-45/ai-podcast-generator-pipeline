@@ -1,0 +1,186 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a professional podcast script writer. Write a conversational and engaging podcast script on the topic: {{ $json.body.text }}. Keep it around 2 minutes when spoken. Use a friendly and informative tone, as if talking directly to listeners. Avoid any headings, labels, or formatting. Output plain text only."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -80,
+        -64
+      ],
+      "id": "20d8bc43-f05f-4034-9f7d-4091b4227f96",
+      "name": "podcast script generator"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -16,
+        160
+      ],
+      "id": "f56dca32-0322-4525-beb6-a5b5fe9c68f8",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.murf.ai/v1/speech/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "YOUR_MURF_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "voiceId",
+              "value": "Stavros"
+            },
+            {
+              "name": "locale",
+              "value": "en-US"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        272,
+        -64
+      ],
+      "id": "97e8d395-b21a-4552-92e8-ee0cc1b48c4f",
+      "name": "Murf API"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.audioFile }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        496,
+        -64
+      ],
+      "id": "c6961c76-cc01-425b-9860-d30f414920c1",
+      "name": "podcast downloader"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0d624bb0-6bc3-4d80-ab3f-66bc5e9bb119",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        -64
+      ],
+      "id": "6f064fa9-043c-4930-8061-3313350f23ce",
+      "name": "Webhook",
+      "webhookId": "0d624bb0-6bc3-4d80-ab3f-66bc5e9bb119"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        720,
+        -64
+      ],
+      "id": "d2908193-e35f-4a88-9036-47fd45c491ed",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "podcast script generator": {
+      "main": [
+        [
+          {
+            "node": "Murf API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "podcast script generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Murf API": {
+      "main": [
+        [
+          {
+            "node": "podcast downloader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "podcast downloader": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "podcast script generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
